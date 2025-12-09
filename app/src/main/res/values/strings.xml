@@ -26,4 +26,9 @@
     <string name="notifications_title">Notifieringar</string>
     <string name="notifications_enable">Aktivera notifieringar</string>
     <string name="notifications_send_test">Skicka testnotis</string>
+
+    <!-- Summary / statistics -->
+    <string name="summary_title">Mood summary</string>
+    <string name="summary_none">No moods to summarize yet.</string>
+    <string name="action_clear_all">Clear all moods</string>
 </resources>

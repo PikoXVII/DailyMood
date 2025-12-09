@@ -57,6 +57,22 @@ class MoodViewModel(
         }
     }
 
+    // Ta bort ett humör från databasen
+    // Delete a single mood from the database
+    fun deleteMood(entry: MoodEntry) {
+        viewModelScope.launch {
+            moodDao.deleteMood(entry.toMoodEntity())
+        }
+    }
+
+    // Ta bort alla humörposter från databasen
+    // Delete all moods from the database
+    fun deleteAllMoods() {
+        viewModelScope.launch {
+            moodDao.deleteAll()
+        }
+    }
+
     // Helper: konvertera från Entity -> MoodEntry
     // Helper: convert from Entity -> MoodEntry
     private fun MoodEntity.toMoodEntry(): MoodEntry {
@@ -73,6 +89,17 @@ class MoodViewModel(
             date = date,
             mood = moodType,
             note = note
+        )
+    }
+
+    // Helper: konvertera från MoodEntry -> MoodEntity (används vid delete)
+    // Helper: convert from MoodEntry -> MoodEntity (used for delete)
+    private fun MoodEntry.toMoodEntity(): MoodEntity {
+        return MoodEntity(
+            id = this.id,
+            dateString = this.date.toString(),
+            moodName = this.mood.name,
+            note = this.note
         )
     }
 
@@ -99,6 +126,7 @@ class MoodViewModel(
                 val response = AdviceApiService.api.getAdvice()
                 _adviceText.value = response.slip.advice
             } catch (e: Exception) {
+                e.printStackTrace()
                 _adviceError.value = "Could not load advice"
             } finally {
                 _adviceLoading.value = false

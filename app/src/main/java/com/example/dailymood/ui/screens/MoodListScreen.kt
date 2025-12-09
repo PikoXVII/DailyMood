@@ -10,21 +10,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import com.example.dailymood.R
 import com.example.dailymood.model.MoodEntry
 import com.example.dailymood.showTestNotification
 
-// Startskärmen – visar daily advice + lista med humör och en knapp för att lägga till nytt.
-// Home screen – shows daily advice + mood history and a button to add new mood.
+// Startskärmen – visar daily advice, statistik, lista med humör och en knapp för att lägga till nytt.
+// Home screen – shows daily advice, summary, mood history and a button to add new mood.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoodListScreen(
@@ -33,7 +34,9 @@ fun MoodListScreen(
     isAdviceLoading: Boolean,
     adviceError: String?,
     onRefreshAdvice: () -> Unit,
-    onAddMoodClick: () -> Unit
+    onAddMoodClick: () -> Unit,
+    onDeleteMood: (MoodEntry) -> Unit,
+    onClearAll: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -57,7 +60,7 @@ fun MoodListScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            // ---------- Daily advice + notifications card ----------
+            // --- Dagens råd + notiser ---
             AdviceAndNotificationCard(
                 adviceText = adviceText,
                 isAdviceLoading = isAdviceLoading,
@@ -65,9 +68,14 @@ fun MoodListScreen(
                 onRefreshAdvice = onRefreshAdvice
             )
 
-            // ---------- Mood list / historik ----------
+            // --- Sammanfattning / statistik + Rensa alla ---
+            MoodSummaryCard(
+                moods = moods,
+                onClearAll = onClearAll
+            )
+
+            // --- Lista med humör ---
             if (moods.isEmpty()) {
-                // Visa tomt tillstånd / show empty state
                 Box(
                     modifier = Modifier
                         .fillMaxSize(),
@@ -81,7 +89,10 @@ fun MoodListScreen(
                         .fillMaxSize()
                 ) {
                     items(moods) { entry ->
-                        MoodListItem(entry = entry)
+                        MoodListItem(
+                            entry = entry,
+                            onDeleteClick = { onDeleteMood(entry) }
+                        )
                     }
                 }
             }
@@ -104,20 +115,19 @@ private fun AdviceAndNotificationCard(
             contract = ActivityResultContracts.RequestPermission()
         ) { granted ->
             if (granted) {
-                // Om användaren godkänner, skicka en testnotis
                 showTestNotification(context)
             }
         }
 
     // Kolla om vi redan har permission
     val hasNotificationPermission =
-        Build.VERSION.SDK_INT < 33 || ContextCompat.checkSelfPermission(
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED
 
     val notificationButtonTextRes =
-        if (hasNotificationPermission || Build.VERSION.SDK_INT < 33) {
+        if (hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             R.string.notifications_send_test
         } else {
             R.string.notifications_enable
@@ -185,11 +195,9 @@ private fun AdviceAndNotificationCard(
 
             Button(
                 onClick = {
-                    if (hasNotificationPermission || Build.VERSION.SDK_INT < 33) {
-                        // Har redan permission -> skicka bara notis
+                    if (hasNotificationPermission || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                         showTestNotification(context)
                     } else {
-                        // Be om permission (Android 13+)
                         notificationPermissionLauncher.launch(
                             Manifest.permission.POST_NOTIFICATIONS
                         )
@@ -202,31 +210,89 @@ private fun AdviceAndNotificationCard(
     }
 }
 
+// Kort som visar statistik + "Rensa alla"
 @Composable
-private fun MoodListItem(entry: MoodEntry) {
-    // En rad i listan
-    // One row in the list
-    Column(
+private fun MoodSummaryCard(
+    moods: List<MoodEntry>,
+    onClearAll: () -> Unit
+) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
     ) {
-        Text(
-            text = "${entry.mood.emoji} ${entry.mood.label}",
-            style = MaterialTheme.typography.titleMedium
-        )
-        Text(
-            text = entry.date.toString(),
-            style = MaterialTheme.typography.bodySmall
-        )
-        if (entry.note.isNotBlank()) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
             Text(
-                text = entry.note,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                text = stringResource(id = R.string.summary_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (moods.isEmpty()) {
+                Text(
+                    text = stringResource(id = R.string.summary_none),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            } else {
+                val grouped = moods.groupBy { it.mood }
+                grouped.forEach { (moodType, list) ->
+                    Text(
+                        text = "${moodType.emoji} ${moodType.label}: ${list.size}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(onClick = onClearAll) {
+                    Text(stringResource(id = R.string.action_clear_all))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MoodListItem(
+    entry: MoodEntry,
+    onDeleteClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = "${entry.mood.emoji} ${entry.mood.label}",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = entry.date.toString(),
+                style = MaterialTheme.typography.bodySmall
+            )
+            if (entry.note.isNotBlank()) {
+                Text(
+                    text = entry.note,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+
+        IconButton(onClick = onDeleteClick) {
+            Icon(
+                imageVector = Icons.Filled.Delete,
+                contentDescription = "Delete mood"
             )
         }
-        Divider(modifier = Modifier.padding(top = 8.dp))
     }
+    Divider()
 }

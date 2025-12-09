@@ -44,7 +44,6 @@ class MainActivity : ComponentActivity() {
 }
 
 // Huvud-Composable som sköter navigationen
-// Main composable that handles navigation
 @Composable
 fun DailyMoodApp(
     moodViewModel: MoodViewModel,
@@ -55,7 +54,6 @@ fun DailyMoodApp(
         startDestination = "mood_list"
     ) {
         composable("mood_list") {
-            // Hämta state från ViewModel / Collect state from ViewModel
             val moods by moodViewModel.moodList.collectAsState()
             val advice by moodViewModel.adviceText.collectAsState()
             val adviceLoading by moodViewModel.adviceLoading.collectAsState()
@@ -67,7 +65,13 @@ fun DailyMoodApp(
                 isAdviceLoading = adviceLoading,
                 adviceError = adviceError,
                 onRefreshAdvice = { moodViewModel.loadAdvice() },
-                onAddMoodClick = { navController.navigate("add_mood") }
+                onAddMoodClick = { navController.navigate("add_mood") },
+                onDeleteMood = { moodEntry ->
+                    moodViewModel.deleteMood(moodEntry)
+                },
+                onClearAll = {
+                    moodViewModel.deleteAllMoods()
+                }
             )
         }
 
@@ -85,8 +89,7 @@ fun DailyMoodApp(
     }
 }
 
-// Enkel preview som INTE använder ViewModel-logik
-// Simple preview not using the real ViewModel logic
+// Enkel preview som inte använder riktiga ViewModel-data
 @Preview(showBackground = true)
 @Composable
 fun DailyMoodPreview() {
@@ -97,7 +100,9 @@ fun DailyMoodPreview() {
             isAdviceLoading = false,
             adviceError = null,
             onRefreshAdvice = {},
-            onAddMoodClick = {}
+            onAddMoodClick = {},
+            onDeleteMood = {},
+            onClearAll = {}
         )
     }
 }
