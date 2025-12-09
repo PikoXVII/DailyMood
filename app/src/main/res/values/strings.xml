@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">DailyMood</string>
+
+    <!-- Titlar -->
+    <string name="title_daily_mood">DailyMood</string>
+    <string name="title_log_mood">Logga dagens humör</string>
+
+    <!-- Texter -->
+    <string name="label_how_feel">Hur känner du dig idag?</string>
+    <string name="label_select_mood">Välj humör:</string>
+    <string name="label_short_note">Kort anteckning (valfritt)</string>
+
+    <!-- Knappar -->
+    <string name="action_cancel">Avbryt</string>
+    <string name="action_save">Spara</string>
+
+    <!-- Tom lista -->
+    <string name="empty_list_text">Inga humör loggade ännu.\nTryck + för att lägga till.</string>
+
+    <!-- Dagens råd -->
+    <string name="daily_advice_title">Dagens råd</string>
+    <string name="daily_advice_hint">Tryck på knappen för att hämta ett råd.</string>
+    <string name="daily_advice_button">Hämta råd</string>
+
+    <!-- Notiser -->
+    <string name="notifications_title">Notifieringar</string>
+    <string name="notifications_enable">Aktivera notifieringar</string>
+    <string name="notifications_send_test">Skicka testnotis</string>
+</resources>
